@@ -1,0 +1,16 @@
+{
+  "name": "fuk-tb-api-functions",
+  "version": "1.0.0",
+  "description": "## API Eine Visualisierung der Endpunkte und der dazugehörigen Funktionen ist unter [diesem Link](https://thingsboard.gruenecho.de/swagger-ui/index.html) zu finden.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start:sinus": "node --env-file=.env javascript/sinus.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
