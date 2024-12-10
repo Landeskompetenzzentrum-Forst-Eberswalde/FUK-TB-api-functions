@@ -1,8 +1,9 @@
 #
 # create token and access ThingsBoard
 # list device IDs
+# rainer.hentschel@lfb.brandenburg.de
 # Available for users with 'TENANT_ADMIN' authority
-#
+
 
 # ENVIRONMENT -------------------------------------------------------
 E <-list();
@@ -58,18 +59,27 @@ TOK$token <- aa$token; TOK$header <- c('X-Authorization' = paste("Bearer", TOK$t
 # DEVICES -----------------------------------------------------------
 DEV <-list();
 DEV$url <-"https://thingsboard.gruenecho.de/api/tenant/devices"
-DEV$query <- list(pageSize = 100,page = 1);
+DEV$query <- list(pageSize = 100,page = 0);
 DEV$list_of_devices <- GET(DEV$url, query = DEV$query, add_headers(.headers = TOK$header))
 
-# TEST --------------------------------------------------------------
+# TABLE --------------------------------------------------------------
 aa <-DEV$list_of_devices; summary(aa)
-
-aa$status_code
-aa$content 
-aa$request 
-aa$handle
-
+bb <- content(aa, as = "parsed")
+cc <-bb$data
+ii <-1; xx <-data.frame(matrix(NA,0,0));
+for(ii in 1:length(cc))
+{
+  dd <-cc[[ii]];
+  xx[ii,"dev_name"] <-dd$name;
+  xx[ii,"dev_label"] <-dd$label;
+  xx[ii,"dev_type"] <-dd$type;
+  xx[ii,"dev_entity"] <-dd$id$entityType;
+  xx[ii,"dev_id"] <-dd$id$id;
+}
+xx <-xx[order(xx$dev_name),]
+DEV$table_of_devices <-xx;
 
 # CLEAN ----------------------------------------------------------------------------
-rm(list = ls()); cat("//014")
+aa <-ls(); aa <-aa[!aa%in%c("DEV","TOK")];
+rm(list = aa); cat("//014")
 
