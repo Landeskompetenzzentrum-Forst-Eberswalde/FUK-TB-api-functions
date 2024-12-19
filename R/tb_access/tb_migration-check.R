@@ -1,13 +1,7 @@
 #
 # compare with controldata
 #
-
-# ENVIRONMENT -------------------------------------------------------
-E <-list();
-E[["sys_env"]] <-Sys.getenv(); 
-E[["session"]] <-sessionInfo();
-E[["options"]] <-options();
-# load_dot_env(file = "../.env")
+# changes.....
 
 # PACKAGES --------------------------------------------------------------
 ll <-c("rstudioapi","stringr","data.table","httr","jsonlite","dotenv")
