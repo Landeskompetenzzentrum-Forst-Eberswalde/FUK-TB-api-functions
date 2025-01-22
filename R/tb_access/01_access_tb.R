@@ -5,8 +5,6 @@
 #
 #
 
-
-
 # PACKAGES --------------------------------------------------------------
 ll <-c("rstudioapi","stringr","data.table","httr","jsonlite","dotenv")
 for(ii in 1:length(ll)){if(!ll[ii]%in%rownames(installed.packages()))install.packages(ll[ii],dependencies = TRUE);library(ll[ii], character.only = TRUE)}

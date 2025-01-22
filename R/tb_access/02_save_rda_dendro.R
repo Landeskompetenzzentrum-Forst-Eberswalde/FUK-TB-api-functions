@@ -38,13 +38,14 @@ aa <-aa[str_detect(aa$dev_name,"Test")==F,];
 ii <-1;
 for(ii in 1:nrow(aa))
 {
-  bb <-aa[ii,]; TB[[bb$dev_name]] <-list(); 
+  bb <-aa[ii,];
   message(bb$dev_name);message(" - - - - - "); message(bb$dev_name);
   url <-paste("https://thingsboard.gruenecho.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"keys/timeseries",sep="/");
   cc <- GET(url, add_headers(.headers = TOK$header))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
   ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")]
   ee <-ee[str_detect(ee,"^Dendro")]; if(length(ee)==0){next};
+  TB[[bb$dev_name]] <-list(); 
   jj <-1;
   for(jj in 1:length(ee))
   {
