@@ -33,10 +33,8 @@ print(G)
 TB <-list();
 start <-as.numeric(as.POSIXct("1900-01-01 21:04:52 CET")) * 1000;
 end <-as.numeric(Sys.time()) * 1000;
-aa <-tb_devices; nam <-"full"; aa <-aa[str_detect(aa$dev_name,"Test")==F,]; 
-# aa <-aa[str_detect(aa$dev_name,"Freifläche"),]; nam <-"freiflaeche";
-# aa <-aa[aa$dev_name%in%c("Test (Migration)"),]; nam <-"test_migration";
-# aa <-aa[str_detect(aa$dev_name,"Test"),]; nam <-"test";
+aa <-tb_devices;
+aa <-aa[str_detect(aa$dev_name,"Test")==F,]; 
 ii <-1;
 for(ii in 1:nrow(aa))
 {
@@ -60,7 +58,7 @@ for(ii in 1:nrow(aa))
     TB[[bb$dev_name]][[ee[jj]]] <-hh;
   }
 }
-out <-paste(G$n_script,nam,".rda",sep="_");
+out <-paste(G$n_script,".rda",sep="_");
 save(TB,file = file.path(G$d_out1,out));
 
 
