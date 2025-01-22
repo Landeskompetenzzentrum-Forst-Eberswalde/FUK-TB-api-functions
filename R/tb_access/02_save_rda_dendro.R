@@ -17,7 +17,7 @@ aa <-getActiveDocumentContext()$path
 bb <-unlist(str_split(aa,"\\/"))
 ### name
 G$n_script <-str_sub(bb[length(bb)],1,-3);
-G$n_out <-G$n_script; 
+G$n_out <-str_sub(G$n_script,1,11);
 ### time
 G$t_date <-Sys.Date() 
 G$t_year <-as.integer(format(Sys.Date(),"%Y")); # G$year <-2023;
@@ -25,7 +25,7 @@ G$t_year <-as.integer(format(Sys.Date(),"%Y")); # G$year <-2023;
 G$d_home <-dirname(aa); # aa <-unlist(str_split(G$d_home,"/proc"))
 G$d_in1 <-G$d_home;
 G$d_out <-file.path(G$d_home,"output"); if(!dir.exists(G$d_out)){dir.create(G$d_out)};
-G$d_out1 <-file.path(G$d_out,G$n_script); if(!dir.exists(G$d_out1)){dir.create(G$d_out1)};
+G$d_out1 <-file.path(G$d_out,G$n_out); if(!dir.exists(G$d_out1)){dir.create(G$d_out1)};
 ### end
 print(G)
 
@@ -46,6 +46,7 @@ for(ii in 1:nrow(aa))
   cc <- GET(url, add_headers(.headers = TOK$header))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
   ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")]
+  ee <-ee[str_detect(ee,"^Dendro")]; if(length(ee)==0){next};
   jj <-1;
   for(jj in 1:length(ee))
   {
