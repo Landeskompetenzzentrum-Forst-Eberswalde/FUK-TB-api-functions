@@ -8,9 +8,9 @@ ll <-c("rstudioapi","stringr","data.table","httr","jsonlite","dotenv")
 for(ii in 1:length(ll)){if(!ll[ii]%in%rownames(installed.packages()))install.packages(ll[ii],dependencies = TRUE);library(ll[ii], character.only = TRUE)}
 
 # LOAD OR SOURCE ------------------------------------------------------------
-aa <-dirname(getActiveDocumentContext()$path); list.files(file.path(aa,"tb_save_data-rda"));
-bb <-"tb_save_data-rda_test_migration_.rda";
-load(file.path(aa,"tb_save_data-rda",bb));
+aa <-dirname(getActiveDocumentContext()$path); list.files(file.path(aa,"output/02_save_rda"));
+bb <-"02_save_rda_test.rda";
+load(file.path(aa,bb));
 
 ### source (set source file accordingly)
 aa <-dirname(getActiveDocumentContext()$path); list.files(aa);
