@@ -33,19 +33,17 @@ print(G)
 TB <-list();
 start <-as.numeric(as.POSIXct("1900-01-01 21:04:52 CET")) * 1000;
 end <-as.numeric(Sys.time()) * 1000;
-aa <-tb_devices; nam <-"full"; aa <-aa[str_detect(aa$dev_name,"Test")==F,]; 
-# aa <-aa[str_detect(aa$dev_name,"Freifläche"),]; nam <-"freiflaeche";
-# aa <-aa[aa$dev_name%in%c("Test (Migration)"),]; nam <-"test_migration";
-# aa <-aa[str_detect(aa$dev_name,"Test"),]; nam <-"test";
+aa <-tb_devices; aa <-aa[str_detect(aa$dev_name,"Test")==F,]; 
 ii <-1;
 for(ii in 1:nrow(aa))
 {
-  bb <-aa[ii,]; TB[[bb$dev_name]] <-list(); 
+  bb <-aa[ii,]; 
   message(bb$dev_name);message(" - - - - - "); message(bb$dev_name);
   url <-paste("https://thingsboard.gruenecho.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"keys/timeseries",sep="/");
   cc <- GET(url, add_headers(.headers = TOK$header))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
-  ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")]
+  ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")];
+  TB[[bb$dev_plot]] <-list(); 
   jj <-1;
   for(jj in 1:length(ee))
   {
@@ -56,10 +54,10 @@ for(ii in 1:nrow(aa))
     gg <- content(ff, as = "parsed"); if(c("status")%in%names(gg)){message(gg$status)}; 
     gg <-unlist(gg); 
     hh <-data.frame(date=as.POSIXct(as.numeric(gg[seq(1,length(gg),2)])/1000),value=as.numeric(gg[seq(2,length(gg),2)]));
-    TB[[bb$dev_name]][[ee[jj]]] <-hh;
+    TB[[bb$dev_plot]][[ee[jj]]] <-hh;
   }
 }
-out <-paste(G$n_script,nam,".rda",sep="_");
+out <-paste(G$n_script,".rda",sep="_");
 save(TB,file = file.path(G$d_out1,out));
 
 

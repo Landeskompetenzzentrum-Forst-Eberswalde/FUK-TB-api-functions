@@ -96,6 +96,40 @@ for(ii in 1:length(cc))
 }
 
 
+# CODE dev_name -------------------------------------------------------------------
+ll <-levels(as.factor(tb_devices$dev_name));
+ii <-1;
+for(ii in 1:length(ll))
+{
+  aa <-"";
+  ### L2 plots 
+  if(ll[ii]=="Beerenbusch Bestand"){aa <-1202};
+  if(ll[ii]=="Beerenbusch Buchen"){aa <-1207};
+  if(ll[ii]=="Beerenbusch Buchen Bestand"){aa <-1207};
+  if(ll[ii]=="Beerenbusch Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Fünfeichen Bestand"){aa <-1202};
+  if(ll[ii]=="Fünfeichen Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Grunewald Bestand"){aa <-1202};
+  if(ll[ii]=="Grunewald Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Kienhorst Bestand"){aa <-1202};
+  if(ll[ii]=="Kienhorst Eichen"){aa <-1202};
+  if(ll[ii]=="Kienhorst Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Nattheide Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Neusorgefeld Bestand"){aa <-1202};
+  if(ll[ii]=="Neusorgefeld Freifläche"){aa <-"1202"};
+  if(ll[ii]=="Schwenow Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Weitzgrund Bestand"){aa <-1202};
+  if(ll[ii]=="Weitzgrund Freifläche"){aa <-"1202_FF"};
+  ### Test sites
+  if(ll[ii]=="Eichhorst Freifläche"){aa <-ll[ii]};
+  ### Test data
+  if(ll[ii]=="Test (Alarm)"){aa <-ll[ii]};
+  if(ll[ii]=="Test (Migration)"){aa <-ll[ii]};
+  ###
+  tb_devices[tb_devices$dev_name%in%ll[ii],"dev_plot"] <-aa;
+  if(aa==""){message("no plot name given")}
+}
+
 # CLEAN ----------------------------------------------------------------------------
 aa <-ls(); aa <-aa[!aa%in%c("tb_devices","TOK")];
 rm(list = aa); cat("//014")

@@ -45,7 +45,7 @@ for(ii in 1:nrow(aa))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
   ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")]
   ee <-ee[str_detect(ee,"^Dendro")]; if(length(ee)==0){next};
-  TB[[bb$dev_name]] <-list(); 
+  TB[[bb$dev_plot]] <-list(); 
   jj <-1;
   for(jj in 1:length(ee))
   {
@@ -56,7 +56,7 @@ for(ii in 1:nrow(aa))
     gg <- content(ff, as = "parsed"); if(c("status")%in%names(gg)){message(gg$status)}; 
     gg <-unlist(gg); 
     hh <-data.frame(date=as.POSIXct(as.numeric(gg[seq(1,length(gg),2)])/1000),value=as.numeric(gg[seq(2,length(gg),2)]));
-    TB[[bb$dev_name]][[ee[jj]]] <-hh;
+    TB[[bb$dev_plot]][[ee[jj]]] <-hh;
   }
 }
 out <-paste(G$n_script,".rda",sep="_");
