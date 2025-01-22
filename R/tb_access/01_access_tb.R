@@ -107,19 +107,19 @@ for(ii in 1:length(ll))
   if(ll[ii]=="Beerenbusch Buchen"){aa <-1207};
   if(ll[ii]=="Beerenbusch Buchen Bestand"){aa <-1207};
   if(ll[ii]=="Beerenbusch Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Fünfeichen Bestand"){aa <-1202};
-  if(ll[ii]=="Fünfeichen Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Grunewald Bestand"){aa <-1202};
-  if(ll[ii]=="Grunewald Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Kienhorst Bestand"){aa <-1202};
-  if(ll[ii]=="Kienhorst Eichen"){aa <-1202};
-  if(ll[ii]=="Kienhorst Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Nattheide Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Neusorgefeld Bestand"){aa <-1202};
-  if(ll[ii]=="Neusorgefeld Freifläche"){aa <-"1202"};
-  if(ll[ii]=="Schwenow Freifläche"){aa <-"1202_FF"};
-  if(ll[ii]=="Weitzgrund Bestand"){aa <-1202};
-  if(ll[ii]=="Weitzgrund Freifläche"){aa <-"1202_FF"};
+  if(ll[ii]=="Fünfeichen Bestand"){aa <-1208};
+  if(ll[ii]=="Fünfeichen Freifläche"){aa <-"1208_FF"};
+  if(ll[ii]=="Grunewald Bestand"){aa <-1101};
+  if(ll[ii]=="Grunewald Freifläche"){aa <-"1101_FF"};
+  if(ll[ii]=="Kienhorst Bestand"){aa <-1203};
+  if(ll[ii]=="Kienhorst Eichen"){aa <-1209};
+  if(ll[ii]=="Kienhorst Freifläche"){aa <-"1203_FF"};
+  if(ll[ii]=="Nattheide Freifläche"){aa <-"1201_FF"};
+  if(ll[ii]=="Neusorgefeld Bestand"){aa <-1205};
+  if(ll[ii]=="Neusorgefeld Freifläche"){aa <-"1205"};
+  if(ll[ii]=="Schwenow Freifläche"){aa <-"1206_FF"};
+  if(ll[ii]=="Weitzgrund Bestand"){aa <-1204};
+  if(ll[ii]=="Weitzgrund Freifläche"){aa <-"1204_FF"};
   ### Test sites
   if(ll[ii]=="Eichhorst Freifläche"){aa <-ll[ii]};
   ### Test data

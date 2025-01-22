@@ -39,7 +39,7 @@ ii <-1;
 for(ii in 1:nrow(aa))
 {
   bb <-aa[ii,];
-  message(bb$dev_name);message(" - - - - - "); message(bb$dev_name);
+  message(bb$dev_name);message(" - - - - - "); message(bb$dev_plot);
   url <-paste("https://thingsboard.gruenecho.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"keys/timeseries",sep="/");
   cc <- GET(url, add_headers(.headers = TOK$header))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
