@@ -1,3 +1,5 @@
 tb_access.Rproj provides full access to ThingsBoards.
 
-Rerun 01 and 02 to update the r workspace.
+02 sources 01 and asks for password.
+
+Rerun 02 to update the r workspace.
