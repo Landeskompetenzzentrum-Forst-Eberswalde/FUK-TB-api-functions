@@ -9,7 +9,7 @@ library(jsonlite)
 library(dotenv)
 
 # Set the working directory to the R folder
-#setwd(paste(getwd(), "/R", sep = ""))
+# setwd(paste(getwd(), "/R", sep = ""))
 
 load_dot_env(file = "../.env")
 
