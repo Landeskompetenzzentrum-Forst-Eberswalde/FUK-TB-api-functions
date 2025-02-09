@@ -26,6 +26,7 @@ response <- GET(
         "or" = "(code.eq.2)"
     ),
     add_headers('apikey' =  Sys.getenv("ANON_KEY")),
+    add_headers('Accept-Profile' = 'icp_dictionaries'), # Name of the Schema
     add_headers('Accept' = 'text/csv')
 )
 #content <- content(response, as = "parsed")
