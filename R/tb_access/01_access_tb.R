@@ -52,7 +52,7 @@ E[["options"]] <-options();
 TOK <-list();
 TOK$ulr <-"https://thingsboard.forstliche-umweltkontrolle.de/api/auth/login";
 user <-as.character(E[["sys_env"]]["EMAIL"])
-aa <- post_request("https://forstliche-umweltkontrolle.de/api/auth/login", 
+aa <- post_request("https://thingsboard.forstliche-umweltkontrolle.de/api/auth/login", 
                    list(username = user, password = askForPassword("Password")));
 TOK$token <- aa$token; TOK$header <- c('X-Authorization' = paste("Bearer", TOK$token, sep = " "));
 
@@ -116,7 +116,7 @@ for(ii in 1:length(ll))
   if(ll[ii]=="Kienhorst Freifläche"){aa <-"1203_FF"};
   if(ll[ii]=="Nattheide Freifläche"){aa <-"1201_FF"};
   if(ll[ii]=="Neusorgefeld Bestand"){aa <-1205};
-  if(ll[ii]=="Neusorgefeld Freifläche"){aa <-"1205"};
+  if(ll[ii]=="Neusorgefeld Freifläche"){aa <-"1205_FF"};
   if(ll[ii]=="Schwenow Freifläche"){aa <-"1206_FF"};
   if(ll[ii]=="Weitzgrund Bestand"){aa <-1204};
   if(ll[ii]=="Weitzgrund Freifläche"){aa <-"1204_FF"};
