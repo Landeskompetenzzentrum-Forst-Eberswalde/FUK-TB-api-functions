@@ -58,11 +58,11 @@ TOK$token <- aa$token; TOK$header <- c('X-Authorization' = paste("Bearer", TOK$t
 
 # DEVICES -----------------------------------------------------------
 DEV <-list();
-url <-"https://thingsboard.gruenecho.de/api/tenant/devices"
+url <-"https://thingsboard.forstliche-umweltkontrolle.de/api/tenant/devices"
 DEV$list_of_devices <- GET(url, query = list(pageSize = 100,page = 0), add_headers(.headers = TOK$header))
 aa <-DEV$list_of_devices; bb <- content(aa, as = "parsed"); if(c("status")%in%names(bb)){message(bb$status)};
 
-url <-"https://thingsboard.gruenecho.de/api/tenant/deviceInfos"
+url <-"https://thingsboard.forstliche-umweltkontrolle.de/api/tenant/deviceInfos"
 DEV$devices_infos <- GET(url, query = list(pageSize = 100,page = 0), add_headers(.headers = TOK$header))
 aa <-DEV$devices_infos; bb <- content(aa, as = "parsed"); if(c("status")%in%names(bb)){message(bb$status)};
 
