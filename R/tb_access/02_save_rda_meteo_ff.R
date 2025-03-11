@@ -41,7 +41,7 @@ for(ii in 1:nrow(aa))
 {
   bb <-aa[ii,];
   message(bb$dev_name);message(" - - - - - "); message(bb$dev_plot);
-  url <-paste("https://thingsboard.gruenecho.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"keys/timeseries",sep="/");
+  url <-paste("https://thingsboard.forstliche-umweltkontrolle.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"keys/timeseries",sep="/");
   cc <- GET(url, add_headers(.headers = TOK$header))
   dd <- content(cc, as = "parsed"); if(c("status")%in%names(dd)){message(dd$status)};
   ee <-unlist(dd); ee <-ee[!ee%in%c("CycleCounter")]; if(length(ee)==0){next};
@@ -51,7 +51,7 @@ for(ii in 1:nrow(aa))
   {
     message(ee[jj])
     query <- list(keys = ee[jj],limit = "100000000",startTs = round(start),endTs = round(end));
-    url <-paste("https://thingsboard.gruenecho.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"values/timeseries?",sep="/");
+    url <-paste("https://thingsboard.forstliche-umweltkontrolle.de/api/plugins/telemetry",bb$dev_entity,bb$dev_id,"values/timeseries?",sep="/");
     ff <- GET(url, query = query, add_headers(.headers = TOK$header));
     gg <- content(ff, as = "parsed"); if(c("status")%in%names(gg)){message(gg$status)}; 
     gg <-unlist(gg); 
