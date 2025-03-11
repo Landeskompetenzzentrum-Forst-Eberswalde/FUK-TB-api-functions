@@ -50,9 +50,9 @@ E[["options"]] <-options();
 
 # TOKEN -------------------------------------------------------------
 TOK <-list();
-TOK$ulr <-"https://thingsboard.gruenecho.de/api/auth/login";
+TOK$ulr <-"https://thingsboard.forstliche-umweltkontrolle.de/api/auth/login";
 user <-as.character(E[["sys_env"]]["EMAIL"])
-aa <- post_request("https://thingsboard.gruenecho.de/api/auth/login", 
+aa <- post_request("https://forstliche-umweltkontrolle.de/api/auth/login", 
                    list(username = user, password = askForPassword("Password")));
 TOK$token <- aa$token; TOK$header <- c('X-Authorization' = paste("Bearer", TOK$token, sep = " "));
 
