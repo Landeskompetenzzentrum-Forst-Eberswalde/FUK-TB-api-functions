@@ -30,36 +30,44 @@ print(G)
 
 # set data -------------------------------------------------------------------------
 
-### xy 
-aa <-file.path(G$d_in,"l2_bb_be.csv"); list.files(G$d_in);
-bb <-read.table(aa,header = T,sep=",",dec="."); 
-bb <-bb[bb$code_location_mm%in%c("F"),]; bb <-bb[bb$dist<3000,]; bb <-bb[!bb$code_plot%in%c(1101),];
-aa <-file.path(G$d_in,"si_plt.csv"); list.files(G$d_in);
-ee <-read.table(aa,header = T,sep=";",dec="."); 
-bb <-merge(bb,ee[,colnames(ee)%in%c("code_plot","altitude_m")],by="code_plot",all.x=T)
-cc <-coordinates(data.frame(x=bb$x_4326,y=bb$y_4326));
-dd <-SpatialPoints(cc,CRS("+init=epsg:4326 +datum=WGS84"));
-dd <-spTransform(dd,CRS("+proj=longlat")); 
-xy <-SpatialPointsDataFrame(dd,bb); 
-### tb
-list.files(G$d_in1);
-load(file.path(G$d_in1,"02_save_rda_meteo_ff_.rda")); list.files(G$d_in1);
+### plot coordinates - xy 
+{
+  aa <-file.path(G$d_in,"l2_bb_be.csv"); list.files(G$d_in);
+  bb <-read.table(aa,header = T,sep=",",dec="."); 
+  bb <-bb[bb$code_location_mm%in%c("F"),]; bb <-bb[bb$dist<3000,]; bb <-bb[!bb$code_plot%in%c(1101),];
+  aa <-file.path(G$d_in,"si_plt.csv"); list.files(G$d_in);
+  ee <-read.table(aa,header = T,sep=";",dec="."); 
+  bb <-merge(bb,ee[,colnames(ee)%in%c("code_plot","altitude_m")],by="code_plot",all.x=T)
+  cc <-coordinates(data.frame(x=bb$x_4326,y=bb$y_4326));
+  dd <-SpatialPoints(cc,CRS("+init=epsg:4326 +datum=WGS84"));
+  dd <-spTransform(dd,CRS("+proj=longlat")); 
+  xy <-SpatialPointsDataFrame(dd,bb); 
+}
+
+### tb values - TB
+{
+  list.files(G$d_in1);
+  load(file.path(G$d_in1,"02_save_rda_meteo_ff_.rda")); list.files(G$d_in1);
+}
+
 ### clean
 suppressWarnings(rm("aa","bb","cc","dd","ee","ii","ll")); gc();
 
 
-# loop pet  --------------------------------------------------
-MM <-list();
+# get day  --------------------------------------------------
+MM <-list(); STAT_in <-list(); STAT_out <-list();
+G$d_temp <-file.path(G$d_out,"stat"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
 data("constants"); # ET constants
 ll <-names(TB); ll;
 ll <-ll[!ll%in%c("1101_FF")]
-ii <-4; 
+ii <-1; 
 for(ii in 1:length(ll))
 {
+  ### input
   aa <-TB[[ll[ii]]]; message(ll[ii]); 
   pp <-str_replace(ll[ii],"_FF",""); pp;
-  gg <-xy[xy@data$code_plot%in%pp,];
-  ### merge variables
+  xy_ <-xy[xy@data$code_plot%in%pp,];
+  ### data.frame - bb
   {
     bb <-data.frame(aa["L_Temp"]);  #names(aa);
     colnames(bb) <-c("date",str_sub(colnames(bb)[2],1,-7)); bb[bb[,2]%in%9999,2] <-NA;
@@ -82,54 +90,78 @@ for(ii in 1:length(ll))
     colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
     bb <-merge(bb,cc,by="date",all=T);
   }
-  ### ex out of range
+  ### summary bb - STAT_in
   {
-    summary(bb);
-    cc <-"L_Temp"; c0 <-60; c1 <- -60;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"L_Temp_max"; c0 <-60; c1 <- -60;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"L_Temp_min"; c0 <-60; c1 <- -60;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"W_Gesch"; c0 <- 50; c1 <- 0;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"G_Str"; c0 <- 1000; c1 <- 0;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"L_Feuchte"; c0 <- 100; c1 <- 0;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    cc <-"Nied_unb"; c0 <-500; c1 <- 0;
-    dd <-bb[bb[,cc] > c0 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs > ",c0))}
-    dd <-bb[bb[,cc] < c1 & is.na(bb[,cc])==F,];
-    if(nrow(dd)>0){bb[rownames(bb)%in%rownames(dd),cc] <-NA; print(paste(cc," --- ",nrow(dd)," obs < ",c0))}
-    summary(bb);
+    STAT_in[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
+    jj <-8;
+    for(jj in 2:ncol(bb))
+    {
+      cc <-bb[,c(1,jj)]; cc <-cc[is.na(cc[,2])==F,];
+      ### table
+      kk <-jj-1;
+      dd[kk,"var"] <-colnames(bb)[jj];
+      dd[kk,"nrow"] <-nrow(cc);
+      dd[kk,"start_day"] <-min(format(cc$date,"%Y-%m-%d"));
+      dd[kk,"end_day"] <-max(format(cc$date,"%Y-%m-%d"));
+      ### time steps 
+      ee <-diff(cc$date); ff <-summary(as.factor(ee));
+      ww <-as.integer(names(ff)); 
+      timesteps <-c(1,5,10,15,30,60,999); uu <-1;
+      for(uu in 1:length(timesteps))
+        {
+          
+          dd[kk,paste0("p_",timesteps[uu],"min")] <-0; 
+          hh <-round(as.integer(ff[names(ff)%in%timesteps[uu]])/sum(ff)*100,4); 
+          if(timesteps[uu]%in%999){hh <-round(sum(ff[as.integer(names(ff))>timesteps[uu-1]])/sum(ff)*100,4)}
+          if(length(hh)>0){dd[kk,paste0("p_",timesteps[uu],"min")] <-hh};
+        };
+      ### number of larger time steps
+      dd[kk,paste0("n_miss_","1h")] <-sum(ff[as.integer(names(ff))>60 & !as.integer(names(ff))>120]); 
+      dd[kk,paste0("n_miss_","2h")] <-sum(ff[as.integer(names(ff))>120 & !as.integer(names(ff))>180]); 
+      dd[kk,paste0("n_miss_","3h")] <-sum(ff[as.integer(names(ff))>180 & !as.integer(names(ff))>240]); 
+      dd[kk,paste0("n_miss_","999min")] <-sum(ff[as.integer(names(ff))>240]); 
+      ### summary
+      ee <-summary(cc[,2]);
+      if(!"NA's"%in%names(ee)){dd[kk,"NA's"] <-0};
+      uu <-1;
+      for(uu in 1:length(ee))
+      {
+        ff <-names(ee)[uu];
+        dd[kk,paste0("s_",tolower(ff))] <-as.numeric(ee[uu]);
+      }
+      ### out of range - doc & ex
+      c0 <- -999; c1 <- 999;
+      if(dd[kk,"var"]%in%"L_Temp"){c0 <- -60; c1 <- 60;}
+      if(dd[kk,"var"]%in%"L_Temp_max"){c0 <- -60; c1 <- 60;}
+      if(dd[kk,"var"]%in%"L_Temp_min"){c0 <- -60; c1 <- 60;}
+      if(dd[kk,"var"]%in%"W_Gesch"){c0 <-0; c1 <- 50;}
+      if(dd[kk,"var"]%in%"G_Str"){c0 <-0; c1 <- 1000;}
+      if(dd[kk,"var"]%in%"L_Feuchte"){c0 <-0; c1 <- 100;}
+      if(dd[kk,"var"]%in%"Nied_unb"){c0 <-0; c1 <- 500;}
+      {
+        ee <-colnames(bb)[jj];
+        ff <-bb[bb[,ee] < c0 & is.na(bb[,ee])==F,];
+        if(nrow(ff)>0){bb[rownames(bb)%in%rownames(dd),ee] <-NA; print(paste(ee," --- ",nrow(ff)," obs > ",c0))}
+        dd[kk,paste0("t_",0)]  <-c0; dd[kk,paste0("t_n_",0)] <-nrow(ff);
+        ff <-bb[bb[,ee] > c1 & is.na(bb[,ee])==F,];
+        if(nrow(ff)>0){bb[rownames(bb)%in%rownames(dd),ee] <-NA; print(paste(ee," --- ",nrow(ff)," obs > ",c1))}
+        dd[kk,paste0("t_",1)]  <-c1; dd[kk,paste0("t_n_",1)] <-nrow(ff);
+      }
+      ###
+    }
+    STAT_in[[ll[ii]]] <-dd;
+    ### save
+    out <-paste(G$n_script,"STAT_in",ll[ii],".csv",sep="_");
+    write.table(dd,file = file.path(G$d_temp,out),sep=";",dec=",",na="",row.names = F,col.names = T);
   }
-  ### CONSTANTS
+  ### ET - constants
   {
     constants$z <-10; # hoehe windmessung
-    constants$Elev <-gg@data$altitude_m; # höhe über null
-    constants$lat <-gg@coords[,2];
-    constants$lat_rad <-gg@coords[,2]*pi/180;
+    constants$Elev <-xy_@data$altitude_m; # höhe über null
+    constants$lat <-xy_@coords[,2];
+    constants$lat_rad <-xy_@coords[,2]*pi/180;
   }
-  ### INPUT
+  ### ET input - cc
   {
     cc <-data.frame(
       Year=format(bb$date,"%Y"),
@@ -157,15 +189,15 @@ for(ii in 1:length(ll))
                           missing_method = "monthly average", 
                           abnormal_method = "monthly average")
   }
-  ### ET
+  ### ET - et_fao
   {
     et_fao <-ET.PenmanMonteith(clim_in,constants,
                                     ts="daily",solar="data",wind="yes",crop="short",
                                     message="yes",AdditionalStats="no",save.csv="no");
   }
-  ### table
+  ### data.frame - ee
   {
-    ### ET
+    ### ET.Daily
     dd <-data.frame(et_fao$ET.Daily);
     ee <-data.frame(date=rownames(dd),et_fao=dd[,1]);
     ff <-data.frame(clim_in$Tmax);
@@ -189,7 +221,7 @@ for(ii in 1:length(ll))
     ff <-data.frame(clim_in$Precip);
     gg <-data.frame(date=rownames(ff),precip=ff[,1]);
     ee <-merge(ee,gg,by="date",all=T);
-    ## cc
+    ## mean temp & rh
     cc$date <-paste(cc$Year,cc$Month,cc$Day,sep="-");
     dd <-tapply(cc$Temp, cc$date,function(x){mean(x,na.rm=T)});
     ff <-data.frame(date=names(dd),t_mean=dd);
@@ -197,6 +229,65 @@ for(ii in 1:length(ll))
     dd <-tapply(cc$RH, cc$date,function(x){mean(x,na.rm=T)});
     ff <-data.frame(date=names(dd),rh_mean=dd);
     ee <-merge(ee,ff,by="date",all=T);
+    ### date
+    ee$date <-as.Date(ee$date);
+  }
+  ### summary ee - STAT_out
+  {
+    STAT_out[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
+    ee$year <-format(ee$date,"%Y");
+    ff <-data.frame(year=levels(as.factor(ee$year)));
+    kk <-2;
+    for(kk in 2:ncol(ee))
+    {
+      if(kk==ncol(ee)){next}
+      cc <-tapply(ee[,kk], ee$year, function(x){length(na.omit(x))});
+      gg <-data.frame(year=names(cc),n=as.integer(cc))
+      colnames(gg)[2] <-colnames(ee)[kk]
+      ff <-merge(ff,gg,by="year");
+    }
+    STAT_out[[ll[ii]]] <-ff; 
+    ### save - STAT_out
+    # out <-paste(G$n_script,"STAT_out",ll[ii],".csv",sep="_");
+    # write.table(ff,file = file.path(G$d_temp,out),sep=";",dec=",",na="",row.names = F,col.names = T);
+    ### plot
+    {
+      ### limit - STAT_out
+      x_min <-1; x_max <-ncol(ff)-1;
+      y_min <-1; y_max <-nrow(ff)
+      ### color
+      cc <-colorRampPalette(c("red3","orange","green4"));
+      ccc <-cc(367);
+      ### window
+      graphics.off();
+      out <-file.path(G$d_temp,paste("STAT_out",ll[ii],".png",sep="_"));
+      png(out, units="mm", width=160, height=y_max*10, res=300);
+      par(mar=c(4,4,2,0),mgp=c(1,1,0),lab=c(5,5,7)); # par()
+      ### base
+      plot(c(y_min,y_max)~c(x_min,x_max),
+           col="white",xlim=c(x_min,x_max+1),ylim=c(y_min-1,y_max),
+           xaxt="n",yaxt="n",xlab="",ylab="",bty="n",
+           main=ll[ii])
+      ### axis
+      text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-0.45,labels=colnames(ff)[-1],srt=90,xpd=NA)
+      text(x=par("usr")[1]-0.45,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA)
+      ### rect
+      kk <-2;
+      for(kk in 2:ncol(ff))
+      {
+        oo <-1;
+        for(oo in 1:y_max)
+        {
+          gg <-ff[oo,kk]; hh <-ccc[gg+1]; 
+          if(gg%in%c(365,366)){hh <-"blue3"}
+          rect(kk-1,oo-1,kk,oo,col=hh,border=hh);
+          text(kk-0.5,oo-0.5,labels=gg,col="black");
+        }
+      }
+      ### save
+      graphics.off();
+    }
+    
   }
   ### save
   MM[[ll[ii]]] <-ee;
@@ -210,7 +301,7 @@ for(ii in 1:length(ll))
 {
   aa <-MM[[ii]];
   ### name
-  nam <-colnames(aa)[-1];
+  nam <-colnames(aa)[!colnames(aa)%in%c("date","year")];
   kk <-1;
   for(kk in 1:length(nam))
   {
@@ -261,8 +352,12 @@ for(ii in 1:length(ll))
 }
 
 # SAVE --------------------------------------------------------
-out <-paste(G$n_script,".rda",sep="_");
+out <-paste(G$n_script,"MM.rda",sep="_");
 save(MM,file = file.path(G$d_out,out));
+out <-paste(G$n_script,"stat_in.rda",sep="_");
+save(STAT_in,file = file.path(G$d_out,out));
+out <-paste(G$n_script,"stat_out.rda",sep="_");
+save(STAT_out,file = file.path(G$d_out,out));
 # load(file.path(G$d_out,out))
 
 # CLEAN ---------------------------------------------------
