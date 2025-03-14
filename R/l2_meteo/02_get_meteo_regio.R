@@ -23,8 +23,9 @@ G$d_home <-dirname(aa); message(G$d_home);
 G$d_in <-file.path(G$d_home,"input");  list.files(G$d_in)
 aa <-unlist(str_split(G$d_home,"/LFE/"));
 G$d_in2 <-paste(aa[1],"klima/02_regionalisierung/DWDregio/02_dwd_nc2tif",sep="/");  list.files(G$d_in2)
-G$d_out <-paste(G$d_home,"output",sep="/"); if(!dir.exists(G$d_out)){dir.create(G$d_out)};
-G$d_in1 <-G$d_out;
+G$d_out <-file.path(G$d_home,"output"); list.files(G$d_out)
+G$d_in1 <-file.path(G$d_out ,"rda");  list.files(G$d_in1)
+G$d_out1 <-file.path(G$d_out ,"rda");  list.files(G$d_out1)
 ### end
 print(G)
 
@@ -33,7 +34,7 @@ print(G)
 ### xy 
 aa <-file.path(G$d_in,"l2_bb_be.csv"); list.files(G$d_in);
 bb <-read.table(aa,header = T,sep=",",dec="."); 
-bb <-bb[bb$code_location_mm%in%c("F"),]; bb <-bb[bb$dist<3000,]; bb <-bb[!bb$code_plot%in%c(1101),];
+bb <-bb[bb$code_location_mm%in%c("F"),]; bb <-bb[bb$dist<3000,];
 cc <-coordinates(data.frame(x=bb$x_4326,y=bb$y_4326));
 dd <-SpatialPoints(cc,CRS("+init=epsg:4326 +datum=WGS84")); 
 xy <-SpatialPointsDataFrame(dd,bb); 
@@ -87,7 +88,7 @@ for(kk in 1:length(var2))
   REG[[var2[kk]]] <-xx[order(xx$date, decreasing = F),];
 }
 out <-paste(G$n_script,".rda",sep="_");
-save(REG,file = file.path(G$d_out,out));
+save(REG,file = file.path(G$d_out1,out));
 # load(file.path(G$d_out,out))
 
 # CLEAN ------------------------------------------------------------------------------
