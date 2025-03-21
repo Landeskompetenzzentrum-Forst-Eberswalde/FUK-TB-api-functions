@@ -8,6 +8,7 @@
 ll <-c("rstudioapi","stringr","data.table","sp","Evapotranspiration")
 for(ii in 1:length(ll)){aa <-ll[ii];if(!aa%in%rownames(installed.packages()))install.packages(aa, dependencies = TRUE); library(aa, character.only = TRUE)}
 
+
 # GLOBALS G ------------------------------------------------------------------
 G <-list() ### list workfiles and facts
 aa <-getActiveDocumentContext()$path
@@ -21,14 +22,19 @@ G$t_year <-as.integer(format(Sys.Date(),"%Y")); # G$year <-2023;
 ### dir
 G$d_home <-dirname(aa); message(G$d_home);
 G$d_in <-file.path(G$d_home,"input");  list.files(G$d_in)
-aa <-unlist(str_split(G$d_home,"/R/"));
-G$d_in1 <-file.path(aa[1],"R/tb_access/output/02_save_rda"); list.files(G$d_in1);
-aa <-unlist(str_split(G$d_home,"/LFE/"));
+G$d_in1 <-file.path(G$d_home,"output/rda"); list.files(G$d_in1);
 G$d_out <-file.path(G$d_home,"output"); if(!dir.exists(G$d_out)){dir.create(G$d_out)};
 ### end
 print(G)
 
-# SET data -------------------------------------------------------------------------
+# LOAD data -------------------------------------------------------------------------
+
+### Mh
+list.files(G$d_in1);
+load(file.path(G$d_in1,"01_meteo_hour_Mh.rda")); list.files(G$d_in1);
+
+### ET constants
+data("constants"); 
 
 ### plot coordinates - xy 
 {
@@ -44,155 +50,18 @@ print(G)
   xy <-SpatialPointsDataFrame(dd,bb); 
 }
 
-### tb values - TB
-{
-  list.files(G$d_in1);
-  load(file.path(G$d_in1,"02_save_rda_meteo_ff_.rda")); list.files(G$d_in1);
-}
-
-### clean
-suppressWarnings(rm("aa","bb","cc","dd","ee","ii","ll")); gc();
-
-
 # GET day  --------------------------------------------------
-MM <-list(); STAT_in <-list(); 
-STAT_out_DOY <-list(); STAT_out_MIN <-list(); STAT_out_MAX <-list();
-G$d_temp <-file.path(G$d_out,paste(G$n_script,"stat",sep="-")); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
-data("constants"); # ET constants
-ll <-names(TB); ll;
-# ll <-ll[!ll%in%c("1101_FF")]
-ii <-3; 
+PET <-list();
+G$d_temp <-file.path(G$d_out,paste(G$n_script)); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
+ll <-names(Mh); ll; # ll <-ll[!ll%in%c("1101_FF")]
+ii <-1; 
 for(ii in 1:length(ll))
 {
   ### input
-  aa <-TB[[ll[ii]]]; message(ll[ii]); 
+  aa <-Mh[[ll[ii]]]; message(ll[ii]); 
   pp <-str_replace(ll[ii],"_FF",""); pp;
   xy_ <-xy[xy@data$code_plot%in%pp,];
-  ### data.frame - bb
-  {
-    bb <-data.frame(aa["L_Temp"]);  #names(aa);
-    colnames(bb) <-c("date",str_sub(colnames(bb)[2],1,-7)); bb[bb[,2]%in%9999,2] <-NA;
-    cc <-data.frame(aa["L_Temp_max"]); 
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-    cc <-data.frame(aa["L_Temp_min"]);
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-    cc <-data.frame(aa["W_Gesch"]);
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-    cc <-data.frame(aa["G_Str"]);
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-    cc <-data.frame(aa["L_Feuchte"]); 
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-    cc <-data.frame(aa["Nied_unb"]); 
-    colnames(cc) <-c("date",str_sub(colnames(cc)[2],1,-7)); cc[cc[,2]%in%9999,2] <-NA;
-    bb <-merge(bb,cc,by="date",all=T);
-  }
-  ### summary bb - STAT_in
-  {
-    STAT_in[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
-    jj <-6;
-    for(jj in 2:ncol(bb))
-    {
-      cc <-bb[,c(1,jj)]; cc <-cc[is.na(cc[,2])==F,];
-      ### table
-      {
-        kk <-jj-1;
-        dd[kk,"var"] <-colnames(bb)[jj];
-        dd[kk,"nrow"] <-nrow(cc);
-        dd[kk,"start_day"] <-min(format(cc$date,"%Y-%m-%d"));
-        dd[kk,"end_day"] <-max(format(cc$date,"%Y-%m-%d"));
-      }
-      ### time steps 
-      {
-        ee <-diff(as.integer(cc$date))/60; ff <-summary(as.factor(ee));
-        ww <-as.integer(names(ff)); 
-        timesteps <-c(1,5,10,15,30,60,999); uu <-1;
-        for(uu in 1:length(timesteps))
-        {
-          
-          dd[kk,paste0("p_",timesteps[uu],"min")] <-0; 
-          hh <-round(as.integer(ff[names(ff)%in%timesteps[uu]])/sum(ff)*100,4); 
-          if(timesteps[uu]%in%999){hh <-round(sum(ff[as.integer(names(ff))>timesteps[uu-1]])/sum(ff)*100,4)}
-          if(length(hh)>0){dd[kk,paste0("p_",timesteps[uu],"min")] <-hh};
-        };
-      }
-      ### number of larger time steps
-      {
-        dd[kk,paste0("n_miss_","1h")] <-sum(ff[as.integer(names(ff))>60 & !as.integer(names(ff))>120]); 
-        dd[kk,paste0("n_miss_","2h")] <-sum(ff[as.integer(names(ff))>120 & !as.integer(names(ff))>180]); 
-        dd[kk,paste0("n_miss_","3h")] <-sum(ff[as.integer(names(ff))>180 & !as.integer(names(ff))>240]); 
-        dd[kk,paste0("n_miss_","999min")] <-sum(ff[as.integer(names(ff))>240]); 
-      }
-      ### summary
-      {
-        ee <-summary(cc[,2]);
-        if(!"NA's"%in%names(ee)){dd[kk,"NA's"] <-0};
-        uu <-1;
-        for(uu in 1:length(ee))
-        {
-          ff <-names(ee)[uu];
-          dd[kk,paste0("s_",tolower(ff))] <-as.numeric(ee[uu]);
-        }
-      }
-      ### doc & ex threshold
-      {
-        c0 <- -999; c1 <- 999;
-        if(dd[kk,"var"]%in%"L_Temp"){c0 <- -60; c1 <- 60;}
-        if(dd[kk,"var"]%in%"L_Temp_max"){c0 <- -60; c1 <- 60;}
-        if(dd[kk,"var"]%in%"L_Temp_min"){c0 <- -60; c1 <- 60;}
-        if(dd[kk,"var"]%in%"W_Gesch"){c0 <-0; c1 <- 50;}
-        if(dd[kk,"var"]%in%"G_Str"){c0 <-0; c1 <- 1000;}
-        if(dd[kk,"var"]%in%"L_Feuchte"){c0 <-0; c1 <- 100;}
-        if(dd[kk,"var"]%in%"Nied_unb"){c0 <-0; c1 <- 500;}
-        {
-          ee <-colnames(bb)[jj];
-          ff <-bb[bb[,ee] < c0 & is.na(bb[,ee])==F,];
-          if(nrow(ff)>0){bb[rownames(bb)%in%rownames(ff),ee] <-NA; print(paste(ee," --- ",nrow(ff)," obs > ",c0))}
-          dd[kk,paste0("t_",0)]  <-c0; dd[kk,paste0("t_n_",0)] <-nrow(ff);
-          ff <-bb[bb[,ee] > c1 & is.na(bb[,ee])==F,];
-          if(nrow(ff)>0){bb[rownames(bb)%in%rownames(ff),ee] <-NA; print(paste(ee," --- ",nrow(ff)," obs > ",c1))}
-          dd[kk,paste0("t_",1)]  <-c1; dd[kk,paste0("t_n_",1)] <-nrow(ff);
-        }
-      }
-      ###
-    }
-    STAT_in[[ll[ii]]] <-dd;
-    ### save
-    out <-paste(G$n_script,"STAT_in",ll[ii],".csv",sep="_");
-    write.table(dd,file = file.path(G$d_temp,out),sep=";",dec=",",na="",row.names = F,col.names = T);
-  }
-  ### hour bb - cc
-  {
-    # summary(bb)
-    cc <-data.frame(date=format(bb$date,"%Y-%m-%d %H"));
-    dd <-"L_Temp"
-    ee <-tapply(bb[,dd], format(bb$date,"%Y-%m-%d %H"), mean);
-    ff <-data.frame(date=names(ee),n=as.numeric(ee)); colnames(ff)[2] <-dd;
-    cc <-merge(cc,ff,by="date",all.x=T)
-    dd <-"L_Feuchte"
-    ee <-tapply(bb[,dd], format(bb$date,"%Y-%m-%d %H"), mean);
-    ff <-data.frame(date=names(ee),n=as.numeric(ee)); colnames(ff)[2] <-dd;
-    cc <-merge(cc,ff,by="date",all.x=T)
-    dd <-"W_Gesch"
-    ee <-tapply(bb[,dd], format(bb$date,"%Y-%m-%d %H"), mean);
-    ff <-data.frame(date=names(ee),n=as.numeric(ee)); colnames(ff)[2] <-dd;
-    cc <-merge(cc,ff,by="date",all.x=T)
-    dd <-"G_Str"
-    ee <-tapply(bb[,dd], format(bb$date,"%Y-%m-%d %H"), mean);
-    ff <-data.frame(date=names(ee),n=as.numeric(ee)); colnames(ff)[2] <-dd;
-    cc <-merge(cc,ff,by="date",all.x=T)
-    dd <-"Nied_unb"
-    ee <-tapply(bb[,dd], format(bb$date,"%Y-%m-%d %H"), sum);
-    ff <-data.frame(date=names(ee),n=as.numeric(ee)); colnames(ff)[2] <-dd;
-    cc <-merge(cc,ff,by="date",all.x=T)
-    cc$date <-as.POSIXct(paste0(cc$date,":00:00"),tz="")
-    # summary(cc)
-  }
-  ### special case  - cc
+  ### exclude data
   {
     if(ll[ii]%in%c("1101_FF"))
     {
@@ -219,7 +88,8 @@ for(ii in 1:length(ll))
     ); # summary(dd)
     ### variables
     var <-colnames(dd); # summary(dd$Rs)
-    dd$Rs <-dd$Rs*0.0036; # W/m2 -> MJ/m2   
+    dd$Rs <-(dd$Rs*(60*60*24))/1e6; # W/m2 ->MJ/m2  
+    # https://stackoverflow.com/questions/40826466/solar-energy-conversion-w-m2-to-mj-m2
     ### ReadInputs
     clim_in <- ReadInputs(varnames=var,
                           climatedata=dd[,var], 
@@ -288,7 +158,7 @@ for(ii in 1:length(ll))
     for(kk in 2:ncol(ee))
     {
       if(kk==ncol(ee)){next}
-      cc <-tapply(ee[,kk], ee$year, function(x){length(na.omit(x))});
+      cc <-tapply(ee[,kk], ee$year, function(x){length(x[is.na(x)==F])});
       gg <-data.frame(year=names(cc),n=as.integer(cc))
       colnames(gg)[2] <-colnames(ee)[kk]
       ff <-merge(ff,gg,by="year");
@@ -338,13 +208,13 @@ for(ii in 1:length(ll))
     STAT_out_MIN[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
     ee$year <-format(ee$date,"%Y");
     ff <-data.frame(year=levels(as.factor(ee$year)));
-    kk <-2;
-    for(kk in 2:ncol(ee))
+    hh <-colnames(ee); hh <-hh[!hh%in%c("date","year")]
+    kk <-1;
+    for(kk in 1:length(hh))
     {
-      if(kk==ncol(ee)){next}
-      cc <-tapply(ee[,kk], ee$year, function(x){min(na.omit(x))});
-      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1))
-      colnames(gg)[2] <-colnames(ee)[kk]
+      rr <-hh[kk];
+      cc <-tapply(ee[,rr], ee$year, function(x){min(x,na.rm=T)});
+      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr;
       ff <-merge(ff,gg,by="year");
     }
     STAT_out_MIN[[ll[ii]]] <-ff; 
@@ -392,13 +262,13 @@ for(ii in 1:length(ll))
     STAT_out_MIN[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
     ee$year <-format(ee$date,"%Y");
     ff <-data.frame(year=levels(as.factor(ee$year)));
-    kk <-2;
-    for(kk in 2:ncol(ee))
+    hh <-colnames(ee); hh <-hh[!hh%in%c("date","year")]
+    kk <-1;
+    for(kk in 1:length(hh))
     {
-      if(kk==ncol(ee)){next}
-      cc <-tapply(ee[,kk], ee$year, function(x){max(na.omit(x))});
-      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1))
-      colnames(gg)[2] <-colnames(ee)[kk]
+      rr <-hh[kk];
+      cc <-tapply(ee[,rr], ee$year, function(x){min(x,na.rm=T)});
+      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr;
       ff <-merge(ff,gg,by="year");
     }
     STAT_out_MIN[[ll[ii]]] <-ff; 
@@ -420,6 +290,61 @@ for(ii in 1:length(ll))
            col="white",xlim=c(x_min,x_max+1),ylim=c(y_min-1,y_max),
            xaxt="n",yaxt="n",xlab="",ylab="",bty="n",
            main=paste("(Tages-)Maximum pro Jahr und Variable - ",ll[ii]))
+      ### axis
+      text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-0.45,labels=colnames(ff)[-1],srt=90,xpd=NA)
+      text(x=par("usr")[1]-0.45,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA,cex=.8)
+      ### rect
+      kk <-3;
+      for(kk in 2:ncol(ff))
+      {
+        oo <-1;
+        for(oo in 1:y_max)
+        {
+          gg <-ff[oo,kk];
+          rr <-floor(rank(ff[,kk])/max(rank(ff[,kk]))*100); print(rr)
+          hh <-ccc[rr[oo]];
+          rect(kk-1,oo-1,kk,oo,col=hh,border=hh);
+          text(kk-0.5,oo-0.5,labels=gg,col="black");
+        }
+      }
+      ### save
+      graphics.off();
+    }
+  }
+  ### STAT_out_MEANSUM
+  {
+    STAT_out_MIN[[ll[ii]]] <-NA; dd <-data.frame(NULL); 
+    ee$year <-format(ee$date,"%Y");
+    ff <-data.frame(year=levels(as.factor(ee$year)));
+    hh <-colnames(ee); hh <-hh[!hh%in%c("date","year")]
+    kk <-8;
+    for(kk in 1:length(hh))
+    {
+      rr <-hh[kk]; 
+      if(rr%in%c("precip","et_fao")){cc <-tapply(ee[,rr], ee$year, function(x){sum(x,na.rm=T)})}
+      if(!rr%in%c("precip","et_fao")){cc <-tapply(ee[,rr], ee$year, function(x){mean(x,na.rm=T)})}
+      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr;
+      ff <-merge(ff,gg,by="year");
+    }
+    STAT_out_MIN[[ll[ii]]] <-ff; 
+    ### plot
+    {
+      ### limit - STAT_out
+      x_min <-1; x_max <-ncol(ff)-1;
+      y_min <-1; y_max <-nrow(ff)
+      ### color
+      cc <-colorRampPalette(c("grey60","green3"));
+      ccc <-cc(100);
+      ### window
+      graphics.off();
+      out <-file.path(G$d_temp,paste("STAT_out_MEANSUM",ll[ii],".png",sep="_"));
+      png(out, units="mm", width=160, height=y_max*10, res=300);
+      par(mar=c(4,4,2,0),mgp=c(1,1,0),lab=c(5,5,7)); # par()
+      ### base
+      plot(c(y_min,y_max)~c(x_min,x_max),
+           col="white",xlim=c(x_min,x_max+1),ylim=c(y_min-1,y_max),
+           xaxt="n",yaxt="n",xlab="",ylab="",bty="n",
+           main=paste("Mittel/Summe je Variable - ",ll[ii]))
       ### axis
       text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-0.45,labels=colnames(ff)[-1],srt=90,xpd=NA)
       text(x=par("usr")[1]-0.45,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA,cex=.8)
