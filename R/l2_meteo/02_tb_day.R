@@ -1,7 +1,7 @@
 # 
-# load meteo hour
-# apply evapotranspiration 
-# plot nDAY, min, max, meansum 
+# read hourly rda
+# aggregate days
+# plot year~variables: nDAY, min, max, meansum 
 # save rda
 # 
 
@@ -29,7 +29,7 @@ print(G)
 
 # LOAD data -------------------------------------------------------------------------
 list.files(G$d_in1);
-load(file.path(G$d_in1,"01_meteo_hour_Mh.rda")); list.files(G$d_in1);
+load(file.path(G$d_in1,"01_tb_hour_Mh.rda")); list.files(G$d_in1);
 
 
 # Meteo day - Md  --------------------------------------------------
@@ -50,7 +50,7 @@ for(ii in 1:length(ll))
     for(jj in 1:length(rr))
     {
       dd <-tapply(bb[,rr[jj]],bb$day, function(x){mean(x,na.rm=T)});
-      if(str_detect(rr[jj],"^Nied") | str_detect(rr[jj],"^G_")){dd <-tapply(bb[,rr[jj]],bb$day, function(x){sum(x,na.rm=T)})};
+      if(str_detect(rr[jj],"^Nied")){dd <-tapply(bb[,rr[jj]],bb$day, function(x){sum(x,na.rm=T)})};
       if(str_detect(rr[jj],"max$")){dd <-tapply(bb[,rr[jj]],bb$day, function(x){max(x,na.rm=T)})};
       if(str_detect(rr[jj],"min$")){dd <-tapply(bb[,rr[jj]],bb$day, function(x){min(x,na.rm=T)})};
       ff <-data.frame(date=names(dd),n=as.numeric(dd)); colnames(ff)[2] <-rr[jj];
@@ -79,7 +79,7 @@ for(ii in 1:length(ll))
         {
           cc <-tapply(dd[,rr[jj]], dd$year, function(x){mean(x,na.rm=T)})
           if(str_detect(rr[jj],"^Nied")){cc <-tapply(dd[,rr[jj]], dd$year, function(x){sum(x,na.rm=T)})};
-          if(str_detect(rr[jj],"^G_")){cc <-tapply(dd[,rr[jj]], dd$year, function(x){sum(x,na.rm=T)/1000})}; # Wh <- kWh
+          # if(str_detect(rr[jj],"^G_")){cc <-tapply(dd[,rr[jj]], dd$year, function(x){sum(x,na.rm=T)/1000})}; # Wh <- kWh
         };
         gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr[jj];
         ff <-merge(ff,gg,by="year");

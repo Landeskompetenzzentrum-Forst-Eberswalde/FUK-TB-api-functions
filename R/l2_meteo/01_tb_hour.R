@@ -1,8 +1,8 @@
 # 
-# load tb meteo data
-# time step hour
-# table overview
-# plot nHOUR, min, max, meansum 
+# load TB rda from open field stations (_FF)  
+# table: number of observations, time steps, missing values, thresholds
+# aggregate hours
+# plot year~variables: nHOUR, min, max, meansum 
 # save rda
 # 
 
