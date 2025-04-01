@@ -16,6 +16,10 @@ Für einen Skriptbasierten Zugriff wurde das R-Projekt [tb_access](https://githu
 
 Das Ziel ist es geschlossene Zeitreihen an Tageswerten herzustellen um Jahressumme berechnen zu können. Außerdem sollen Messfehler identifiziert und entfernt werden.
 
+In einem erstenm Schritt werden stündliche Werte im Falle kleinerer Zeitschritte gebildet. Schwellenwerte für Minimum und Maximum entsprechend physikalisch möglicher Ergebnisse werden diese bereinigt und zu Tageswerten aggregiert.
+
+***!!! Schwellenwerte müssen erneut kontrolliert werden***
+
 Zur Füllung der Zeitreihen sollen dann [regionalisierte Tagesgrids des DWD](https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/) an die Messreihen der Freilandstationen angepasst werden.
 
 Um eine Rückkopplung zur Sensorüberwachung herzustellen sollen die Datenergänzungsroutinen wöchentlich durchgeführt und im Falle von Messauffälligkeiten einen Sensorbericht auf GitHub abgelegt werden.
