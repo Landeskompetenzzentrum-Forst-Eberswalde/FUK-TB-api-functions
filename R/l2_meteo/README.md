@@ -12,6 +12,10 @@ Für einen Skriptbasierten Zugriff wurde das R-Projekt [tb_access](https://githu
 
 ***??? Ist das sinnvoll? Da zur Analyse meist vollständigt Datenreihen benötigt dauert der API-Zugriff etwas lange und mit Hilfe der .rda files kann schnell an alter Stelle weitergearbeitet werden.***
 
+Ggf. direkt über die TB Datenbank für einen Echtzeitdatenabruf.
+
+Eventuell auch durch lokales Klonen möglich. Allerdings mit recht komplizierter TB Struktur. *Publication*
+
 ## Datenverarbeitung
 
 Das Ziel ist es geschlossene Zeitreihen an Tageswerten herzustellen um Jahressumme berechnen zu können. Außerdem sollen Messfehler identifiziert und entfernt werden.
@@ -19,6 +23,8 @@ Das Ziel ist es geschlossene Zeitreihen an Tageswerten herzustellen um Jahressum
 In einem erstenm Schritt werden stündliche Werte im Falle kleinerer Zeitschritte gebildet. Schwellenwerte für Minimum und Maximum entsprechend physikalisch möglicher Ergebnisse werden diese bereinigt und zu Tageswerten aggregiert.
 
 ***!!! Schwellenwerte müssen erneut kontrolliert werden***
+
+Überprüfung mit ICP Forests
 
 Zur Füllung der Zeitreihen sollen dann [regionalisierte Tagesgrids des DWD](https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/) an die Messreihen der Freilandstationen angepasst werden.
 

@@ -424,20 +424,32 @@ for(ii in 1:length(ll))
 
 
 
-# SAVE rda --------------------------------------------------------
-G$d_temp <-file.path(G$d_out,"rda"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
 
-out <-paste(G$n_script,"mm_plm.rda",sep="_");
-save(mm_plm,file = file.path(G$d_temp,out));
-out <-paste(G$n_script,"mm_mem.rda",sep="_");
-save(mm_mem,file = file.path(G$d_temp,out));
+# SAVE pg -------------------------------------------------------------
 
-out <-paste(G$n_script,"Mc.rda",sep="_");
-save(Mc,file = file.path(G$d_temp,out));
-out <-paste(G$n_script,"Mi.rda",sep="_");
-save(Mi,file = file.path(G$d_temp,out));
+### rbind plots
+ll <-names(Mi);
+ii <-1; xx <-NULL;
+for(ii in 1:length(ll))
+{
+  aa <-Mi[[ll[ii]]]; 
+  ### add code_plot
+  pp <-str_replace(ll[ii],"_FF","");
+  bb <-data.frame(matrix(NA,nrow(aa),0)); bb$plot <-pp;
+  cc <-cbind(bb,aa);
+  ### ex empty (this is ugly)
+  dd <-is.na(cc[,c(3:ncol(cc))]);
+  ee <-apply(dd, 1, function(x){length(x[x==F])});
+  cc <-cc[ee>0,];
+  ### rbind plots
+  xx <-rbind(xx,cc);
+}
 
-# load(file.path(G$d_temp,out))
+### write pg table
+s1 <-"fuk"
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+t1 <-paste(G$n_project,"mm_mem",sep="-")
+dbWriteTable(pg, t1,xx,overwrite=T); 
 
 
 # CLEAN ---------------------------------------------------
