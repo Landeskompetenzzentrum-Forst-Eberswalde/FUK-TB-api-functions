@@ -5,7 +5,7 @@
 # 
 
 # PACKAGES --------------------------------------------------------------
-ll <-c("rstudioapi","stringr","data.table","sp")
+ll <-c("rstudioapi","stringr","data.table","sp","RPostgreSQL","dotenv")
 for(ii in 1:length(ll)){aa <-ll[ii];if(!aa%in%rownames(installed.packages()))install.packages(aa, dependencies = TRUE); library(aa, character.only = TRUE)}
 
 
@@ -30,15 +30,18 @@ G$d_out1 <-file.path(G$d_out,"rda"); if(!dir.exists(G$d_out1)){dir.create(G$d_ou
 ### end
 print(G)
 
+# ENVIRONMENT -------------------------------------------------------
+load_dot_env(file =file.path(G$d_home,".env"))
+E <-list();
+E[["sys_env"]] <-Sys.getenv(); 
+E[["session"]] <-sessionInfo();
+E[["options"]] <-options();
+
 # FUNCTION ---------------------------------------------------------------------
 list.files(G$d_in);
 source(file.path(G$d_in,"offiziell_DWD_FAO56_callscript.R"))
 
 # LOAD data -------------------------------------------------------------------------
-
-### Mh
-list.files(G$d_in1);
-load(file.path(G$d_in1,"04_ex_day_Mi.rda")); list.files(G$d_in1);
 
 ### plot coordinates - xy 
 {
@@ -54,36 +57,65 @@ load(file.path(G$d_in1,"04_ex_day_Mi.rda")); list.files(G$d_in1);
   xy <-SpatialPointsDataFrame(dd,bb); 
 }
 
+# CONNECT FUK_PG -------------------------------------------------------------
+
+### CONNECT
+aa <-E[["sys_env"]]
+host <-aa[names(aa)%in%"FUK_PG_HOST"]; port <-aa[names(aa)%in%"FUK_PG_PORT"];
+user <-aa[names(aa)%in%"FUK_PG_USER"]; pw <-aa[names(aa)%in%"FUK_PG_PW"]; db <-aa[names(aa)%in%"FUK_PG_DB"]; 
+pg <- dbConnect(PostgreSQL(),host=host,user=user,password=pw,port=port,dbname=db);
+
+### SCHEMA
+s1 <-"fuk";
+qq <-paste("SELECT * FROM information_schema.tables WHERE table_schema ='", s1, "';", sep="");
+aa <- dbSendQuery(pg, statement=qq);
+bb <- fetch(aa, -1); tt <-bb$table_name; 
+
+### TABLE
+tt <-tt[order(tt)]; cbind(tt);
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+xx <-dbReadTable(pg, "l2_meteo-mm_mem"); 
+
+### list plots
+ll <-levels(as.factor(xx$plot));
+ii <-1; Me <-list();
+for(ii in 1:length(ll))
+{
+  aa <-xx[xx$plot%in%ll[ii],]; 
+  Me[[paste0(ll[ii],"_FF")]] <-aa[,!colnames(aa)%in%c("plot")];
+}
+
 # ET0_FAO --------------------------------------------------
-aa <-data.frame(id=c(1:length(xy@data$code_plot)),
-  date=NA, doy=NA, long=xy@coords[,1], lat=xy@coords[,2],
-  alt=xy@data$altitude_m
+aa <-data.frame(id=xy@data$code_plot, date=NA, doy=NA, 
+                long=xy@coords[,1], lat=xy@coords[,2],
+                alt=xy@data$altitude_m
 )
 tt <-seq.Date(as.Date("1996-01-01"),as.Date(Sys.Date()),"day");
 ii <-1; bb <-NULL;
 for(ii in 1:length(tt))
 {
-  message(tt[ii])
+  message(tt[ii]);  # tt[ii] <-"1998-01-01"
   ### date
   bb  <-aa;
   bb$date <-tt[ii];
   bb$doy <- as.integer(format(tt[ii],"%j"));
   ### values 
-  jj <-1; cc <-names(Me)
+  jj <-1;
   for(jj in 1:length(Me))
   {
     cc <-Me[[jj]]; cc <-cc[cc$date%in%tt[ii],];
+    if(nrow(cc)==0){next};
     bb[jj,"tadm"] <-cc$AT;
     bb[jj,"tadx"] <-cc$AT_max;
     bb[jj,"tadn"] <-cc$AT_min;
-    bb[jj,"rsds"] <-cc$SR*0.0036;
+    bb[jj,"rsds"] <-cc$SR*60*60*24/1e6; # Watt m-2 -> MJ m-2 d-1
     bb[jj,"wsdm"] <-cc$WS;
     bb[jj,"rfmean"] <-cc$RH;
   }
   ### pet
   {
     dd <-na.omit(bb)
-    dd$pet <-DWD_FAO_56(
+    try(dd$pet <-DWD_FAO_56(
       z=10,
       latitude = dd$lat,
       altitude = dd$alt,
@@ -98,17 +130,16 @@ for(ii in 1:length(tt))
       vapdm = NA,
       tempversion = "FAO",
       full.return = F
-    )
+    ),silent = T)
   }
   ### save
   jj <-1;
   for(jj in 1:nrow(dd))
   {
-    hh <-dd[jj,"id"]; gg <-dd[jj,"date"];
-    Me[[hh]][Me[[jj]]$date%in%gg,"PET"] <-round(dd[jj,"pet"],4);
+    hh <-paste0(dd[jj,"id"],"_FF"); gg <-dd[jj,"date"];
+    try(Me[[hh]][Me[[hh]]$date%in%gg,"PET"] <-round(dd[jj,"pet"],4),silent = T);
   }
 }
-
 
 # PLOT years ------------------------------------------------------
 G$d_temp <-file.path(G$d_out,G$n_script); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
@@ -172,6 +203,22 @@ for(ii in 1:length(ll))
   }
 }
 
+# CORRECT days ------------------------------------------------------
+
+### 1204
+{
+  aa <-Me[["1204_FF"]]; aa <-aa[format(aa$date,"%Y")%in%c(2022:2023),]
+  bb <-Me[["1204_FF"]][Me[["1204_FF"]]$date>=as.Date("2022-02-20",tz="") & 
+                         Me[["1204_FF"]]$date<=as.Date("2022-12-31",tz=""),];
+  Me[["1204_FF"]][rownames(Me[["1204_FF"]])%in%rownames(bb),"PET"] <-NA;
+}
+
+### 1206
+{
+  aa <-Me[["1206_FF"]]; aa <-aa[format(aa$date,"%Y")%in%c(1996:1998),]
+  bb <-Me[["1206_FF"]][Me[["1206_FF"]]$date%in%as.Date("1998-12-09",tz=""),];
+  Me[["1206_FF"]][rownames(Me[["1206_FF"]])%in%rownames(bb),"PET"] <-NA;
+}
 
 # SAVE --------------------------------------------------------------------
 Mp <-Me;
@@ -179,6 +226,30 @@ out <-paste(G$n_script,"Mp.rda",sep="_");
 save(Mp,file = file.path(G$d_out1,out));
 
 # load(file.path(G$d_out1,out)); Me <-Mp;
+
+
+# SAVE pg -------------------------------------------------------------
+
+### rbind plots
+ll <-names(Me);
+ii <-1; xx <-NULL;
+for(ii in 1:length(ll))
+{
+  aa <-Me[[ll[ii]]]; 
+  ### add code_plot
+  pp <-str_replace(ll[ii],"_FF","");
+  bb <-data.frame(matrix(NA,nrow(aa),0)); bb$plot <-pp;
+  cc <-cbind(bb,aa);
+  ### rbind plots
+  xx <-rbind(xx,cc);
+}
+
+### write pg table
+s1 <-"fuk"
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+t1 <-paste(G$n_project,"mm_mem",sep="-")
+dbWriteTable(pg, t1,xx,overwrite=T); 
+
 
 # CLEAN ---------------------------------------------------
 rm(list = ls());  gc()

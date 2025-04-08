@@ -33,56 +33,70 @@ print(G)
 
 # LOAD data ---------------------------------------------------------------------
 list.files(G$d_in1);
-load(file.path(G$d_in1,"07_ts_day_Mm.rda")); list.files(G$d_in1);
+load(file.path(G$d_in1,"07_model_day_Mm.rda")); list.files(G$d_in1);
 
 
 # Aggregate - AGG  --------------------------------------------------
 AGG <-list();
 ll <-names(Mm); ll; # ll <-ll[!ll%in%c("1101_FF")]
-ii <-1; 
-for(ii in 1:length(ll))
+### aggregate
+agg <-c("YEAR","0409")
+kk <-1;
+for(kk in 1:length(agg))
 {
-  ### input
-  aa <-Mm[[ll[ii]]]; message(ll[ii]); 
-  nam_site <-unlist(str_split(ll[ii],"_FF"))[1];
-  ### variables
-  bb <-colnames(aa)[-1]; bb <-bb[str_detect(bb,"_0")==F]; jj <-1;
-  for(jj in 1:length(bb)) ### loop variables
+  ii <-1; 
+  for(ii in 1:length(ll))
   {
-    ### aggregate
-    nam_aggregate <-"year"; aa[,nam_aggregate] <-format(aa$date,"%Y");
-    ### metrics
-    dd <-c("MIN","MAX","MEANSUM"); tt <-3;
-    for(tt in 1:length(dd)) ### loop metrics
+    ### input
+    aa <-Mm[[ll[ii]]]; message(ll[ii]); 
+    nam_site <-unlist(str_split(ll[ii],"_FF"))[1];
+    ### variables
+    bb <-colnames(aa)[-1]; bb <-bb[str_detect(bb,"_0")==F]; jj <-1;
+    for(jj in 1:length(bb)) ### loop variables
     {
-      nam_metric <-paste(bb[jj],dd[tt],sep="_");
-      ### set table
-      if(ii==1){ff <-data.frame(agg=levels(as.factor(aa[,nam_aggregate]))); colnames(ff)[1] <-nam_aggregate};
-      if(nam_metric%in%names(AGG)){ff <-AGG[[nam_metric]]};
-      ### tapply
-      if(dd[tt]%in%"MIN"){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){min(x,na.rm=T)})};
-      if(dd[tt]%in%"MAX"){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){max(x,na.rm=T)})};
-      if(dd[tt]%in%"MEANSUM")
-      {
-        cc <-tapply(aa[,bb[jj]], aa[,nam_aggregate], function(x){mean(x,na.rm=T)})
-        if(bb[jj]%in%c("PR","PET")){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){sum(x,na.rm=T)})};
-      };
-      ### merge
-      ee <-data.frame(a=names(cc),b=round(as.numeric(cc),1)); 
-      colnames(ee)[1] <-nam_aggregate; colnames(ee)[2] <-nam_site;
-      ff <-merge(ff,ee,by=nam_aggregate,all=T);
-      ### save
-      AGG[[nam_metric]] <-ff[order(ff[,nam_aggregate],decreasing = T),]; 
-      ### end tt
+        ### aggregate
+        nam_aggregate <-agg[kk]; 
+        if(nam_aggregate%in%"YEAR"){aa[,nam_aggregate] <-format(aa$date,"%Y");}
+        if(nam_aggregate%in%"0409")
+        {
+          aa[,nam_aggregate] <-format(aa$date,"%Y");
+          aa <-aa[format(aa$date,"%m")%in%c("04","05","06","07","08","09"),];
+        }
+        ### metrics
+        dd <-c("MIN","MAX","MEANSUM"); tt <-3;
+        for(tt in 1:length(dd)) ### loop metrics
+        {
+          nam_metric <-paste(bb[jj],dd[tt],sep="_");
+          ### set table
+          if(ii==1){ff <-data.frame(agg=levels(as.factor(aa[,nam_aggregate]))); colnames(ff)[1] <-nam_aggregate};
+          if(paste(nam_aggregate,nam_metric,sep="-")%in%names(AGG)){ff <-AGG[[paste(nam_aggregate,nam_metric,sep="-")]]};
+          ### tapply
+          if(dd[tt]%in%"MIN"){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){min(x,na.rm=T)})};
+          if(dd[tt]%in%"MAX"){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){max(x,na.rm=T)})};
+          if(dd[tt]%in%"MEANSUM")
+          {
+            cc <-tapply(aa[,bb[jj]], aa[,nam_aggregate], function(x){mean(x,na.rm=T)})
+            if(bb[jj]%in%c("PR","PET")){cc <-tapply(aa[,bb[jj]],aa[,nam_aggregate], function(x){sum(x,na.rm=T)})};
+          };
+          ### merge
+          ee <-data.frame(a=names(cc),b=round(as.numeric(cc),1)); 
+          colnames(ee)[1] <-nam_aggregate; colnames(ee)[2] <-nam_site;
+          ff <-merge(ff,ee,by=nam_aggregate,all=T);
+          ### save
+          AGG[[paste(nam_aggregate,nam_metric,sep="-")]] <-ff[order(ff[,nam_aggregate],decreasing = T),]; 
+          ### end tt
+        }
+    ### end jj
     }
-  ### end jj
+  ### end ii
   }
-### end ii
+### end kk
 }
 
 # PLOT AGG -------------------------------------------
 G$d_temp <-file.path(G$d_out,paste(G$n_script,sep="-")); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
-ll <-names(AGG); ll; ii <-1;
+ll <-names(AGG); ll <-ll[str_detect(ll,"MEANSUM$")]; 
+ii <-1;
 for(ii in 1:length(ll))
 {
   ff <-AGG[[ll[ii]]];
@@ -98,7 +112,7 @@ for(ii in 1:length(ll))
   ### window
   {
     graphics.off();
-    out <-file.path(G$d_temp,paste("AGG",nam_aggregate,ll[ii],".png",sep="_"));
+    out <-file.path(G$d_temp,paste("AGG",ll[ii],".png",sep="_"));
     png(out, units="mm", width=x_max*50, height=y_max*10, res=300);
   }
   ### base
@@ -110,7 +124,7 @@ for(ii in 1:length(ll))
   }
   ### axis
   {
-    text(x=(x_max/2)+1,y=par("usr")[4]+0.1,labels=paste(nam_aggregate,ll[ii],sep=" - "),srt=0,xpd=NA,cex=4)
+    text(x=(x_max/2)+1,y=par("usr")[4]+0.1,labels=ll[ii],srt=0,xpd=NA,cex=4)
     text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-0.2,labels=colnames(ff)[-1],srt=90,xpd=NA,cex=3)
     text(x=par("usr")[1]-0.05,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA,cex=2)
   }
@@ -133,6 +147,10 @@ for(ii in 1:length(ll))
   graphics.off();
 ### end ii
 }
+
+# SAVE --------------------------------------------------------------------
+out <-paste(G$n_script,"AGG.rda",sep="_");
+save(AGG,file = file.path(G$d_out1,out));
 
 # CLEAN ---------------------------------------------------
 rm(list = ls());  gc()

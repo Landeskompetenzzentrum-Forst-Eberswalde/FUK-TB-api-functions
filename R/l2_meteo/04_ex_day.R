@@ -27,10 +27,41 @@ G$d_out1 <-file.path(G$d_out,paste(G$n_script)); if(!dir.exists(G$d_out1)){dir.c
 ### end
 print(G)
 
-# LOAD data -------------------------------------------------------------------------
-list.files(G$d_in1);
-load(file.path(G$d_in1,"03_icpf_day_Mi.rda")); list.files(G$d_in1);
-Me <-Mi; rm("Mi"); gc();
+# ENVIRONMENT -------------------------------------------------------
+load_dot_env(file =file.path(G$d_home,".env"))
+E <-list();
+E[["sys_env"]] <-Sys.getenv(); 
+E[["session"]] <-sessionInfo();
+E[["options"]] <-options();
+
+# CONNECT FUK_PG -------------------------------------------------------------
+
+### CONNECT
+aa <-E[["sys_env"]]
+host <-aa[names(aa)%in%"FUK_PG_HOST"]; port <-aa[names(aa)%in%"FUK_PG_PORT"];
+user <-aa[names(aa)%in%"FUK_PG_USER"]; pw <-aa[names(aa)%in%"FUK_PG_PW"]; db <-aa[names(aa)%in%"FUK_PG_DB"]; 
+pg <- dbConnect(PostgreSQL(),host=host,user=user,password=pw,port=port,dbname=db);
+
+### SCHEMA
+s1 <-"fuk";
+qq <-paste("SELECT * FROM information_schema.tables WHERE table_schema ='", s1, "';", sep="");
+aa <- dbSendQuery(pg, statement=qq);
+bb <- fetch(aa, -1); tt <-bb$table_name; 
+
+### TABLE
+tt <-tt[order(tt)]; cbind(tt);
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+xx <-dbReadTable(pg, "l2_meteo-mm_mem"); 
+
+### list plots
+ll <-levels(as.factor(xx$plot));
+ii <-1; Me <-list();
+for(ii in 1:length(ll))
+{
+  aa <-xx[xx$plot%in%ll[ii],]; 
+  Me[[paste0(ll[ii],"_FF")]] <-aa[,!colnames(aa)%in%c("plot")];
+}
+
 
 # CORRECT days ------------------------------------------------------
 
@@ -166,12 +197,27 @@ for(ii in 1:length(ll))
 }
 
 
+# SAVE pg -------------------------------------------------------------
 
-# SAVE --------------------------------------------------------
-G$d_temp <-file.path(G$d_out,"rda"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
+### rbind plots
+ll <-names(Me);
+ii <-1; xx <-NULL;
+for(ii in 1:length(ll))
+{
+  aa <-Me[[ll[ii]]]; 
+  ### add code_plot
+  pp <-str_replace(ll[ii],"_FF","");
+  bb <-data.frame(matrix(NA,nrow(aa),0)); bb$plot <-pp;
+  cc <-cbind(bb,aa);
+  ### rbind plots
+  xx <-rbind(xx,cc);
+}
 
-out <-paste(G$n_script,"Me.rda",sep="_");
-save(Me,file = file.path(G$d_temp,out));
+### write pg table
+s1 <-"fuk"
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+t1 <-paste(G$n_project,"mm_mem",sep="-")
+dbWriteTable(pg, t1,xx,overwrite=T); 
 
 
 # load(file.path(G$d_temp,out))

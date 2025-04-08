@@ -68,7 +68,7 @@ mm_mem <-mm_mem[paste0(mm_mem$survey_year,mm_mem$code_plot,mm_mem$code_variable,
 # SET Mc --------------------------------------------------
 Mc <-list(); # meteo corrections
 ll <-sort(names(Md)); ll; # ll <-ll[!ll%in%c("1101_FF")]
-ii <-1; 
+ii <-4; 
 for(ii in 1:length(ll))
 {
   ### input
@@ -78,7 +78,7 @@ for(ii in 1:length(ll))
   mem <-mm_mem[mm_mem$code_plot%in%pp,];
   ### table icpf
   dd <-mm_mem$date_observation; dd <-sort(dd);
-  cc <-data.frame(date=dd[duplicated(dd)==F]);
+  cc <-data.frame(date=dd[duplicated(dd)==F]); # duplicated days in icpf can occur due to multiple sensors
   pp <-levels(as.factor(mem$code_variable)); 
   pp <-pp[pp%in%c("AT","PR","RH","WS","SR")]
   jj <-2;
@@ -86,6 +86,19 @@ for(ii in 1:length(ll))
   {
     print(paste(jj," of ",length(pp)));
     plm0 <-plm[plm$code_variable%in%pp[jj],];
+    dd <-plm0[duplicated(plm0$survey_year),];
+    if(nrow(dd)>0)
+      {
+        message("!!! dublicated sensor");
+        qq <-levels(as.factor(plm0$survey_year));
+        kk <-2; ee <-NULL;
+        for(kk in 1:length(qq))
+        {
+          ff <-plm0[plm0$survey_year%in%qq[kk],];
+          ee <-rbind(ee,ff[ff$instrument_seq_nr%in%max(ff$instrument_seq_nr),]);
+        }
+        plm0 <-ee;
+      }
     mem0 <-mem[mem$code_variable%in%pp[jj],]; 
     dd <-mem0[paste0(mem0$survey_year,mem0$instrument_seq_nr)%in%paste0(plm0$survey_year,plm0$instrument_seq_nr),];
     ee <-dd[,c("date_observation","daily_mean")]; colnames(ee) <-c("date",pp[jj]);
@@ -96,6 +109,12 @@ for(ii in 1:length(ll))
       colnames(ee) <-c("date",paste0(pp[jj],"_min"),paste0(pp[jj],"_max"));
       cc <-merge(cc,ee,by="date",all.x=T);
     }
+  }
+  ### missing days due to duplicaded sensors
+  {
+    dd <-seq.Date(as.Date(min(cc$date),tz=""),as.Date(max(cc$date),tz=""),by="day");
+    dd <-dd[!dd%in%cc$date];
+    if(length(dd)>0){message("!!! missing days due to duplicaded sensors")}
   }
   ### diff data
   {
@@ -124,6 +143,79 @@ for(ii in 1:length(ll))
   Mc[[ll[ii]]] <-dd;
   ### end ii
 }
+
+# PLOT nDayDiff ---------------------------------------------------------------
+G$d_temp <-file.path(G$d_out1,"nDay"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
+ww <-c(0.1,1,5)
+vv <-1;
+for(vv in 1:length(ww))
+{
+  ll <-names(Mc); ll; 
+  ii <-1;
+  for(ii in 1:length(ll))
+  {
+    dd <-Mc[[ll[ii]]]; message(ll[ii]); 
+    # dd <-dd[duplicated(dd$date)==F,]
+    ### plot diff day
+    dd$year <-format(dd$date,"%Y");
+    ff <-data.frame(year=levels(as.factor(dd$year)));
+    rr <-colnames(dd); rr <-rr[str_detect(rr,"^diff")]
+    jj <-4;
+    for(jj in 1:length(rr))
+    {
+      pp <-rr[jj]; 
+      dd <-dd[is.na(dd[,pp])==F,];
+      dd[abs(dd[,pp])>=ww[vv],pp] <-NA;
+      cc <-tapply(dd[,pp], dd$year, function(x){length(x[is.na(x)])})
+      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr[jj];
+      ff <-merge(ff,gg,by="year");
+    }
+    ### plot 
+    {
+      ff <-ff[order(ff$year,decreasing = F),]; 
+      ### limit - STAT_out
+      x_min <-1; x_max <-ncol(ff)-1;
+      y_min <-1; y_max <-nrow(ff)
+      ### color
+      cc <-colorRampPalette(c("green4","orange","red3")); ccc <-cc(367)
+      ### window
+      {
+        graphics.off();
+        out <-file.path(G$d_temp,paste0("nDayDiff_",ww[vv],"_",ll[ii],"_.png"));
+        png(out, units="mm", width=x_max*30, height=y_max*10, res=300);
+      }
+      ### base
+      par(mar=c(4,4,2,0),mgp=c(3,1,0),lab=c(5,5,7)); 
+      plot(c(y_min,y_max)~c(x_min,x_max),
+           col="white",xlim=c(x_min,x_max+1),ylim=c(y_min-1,y_max),
+           xaxt="n",yaxt="n",xlab="",ylab="",bty="n")
+      ### axis
+      text(x=x_max/2,y=par("usr")[4]+0.5,labels=paste0("nDayDiff_",ww[vv]," - ",ll[ii]),srt=0,xpd=NA,cex=1.5);   
+      text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-1.5,labels=colnames(ff)[-1],srt=90,xpd=NA)
+      text(x=par("usr")[1]-0.45,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA)
+      ### rect
+      kk <-2;
+      for(kk in 2:ncol(ff))
+      {
+        oo <-5;
+        for(oo in 1:y_max)
+        {
+          gg <-ff[oo,kk]; 
+          hh <-ccc[gg+1]; 
+          if(gg%in%0){hh <-"blue3"}
+          if(is.na(gg) | is.nan(gg) | is.infinite(gg)){hh <-"white"; gg<-""}
+          rect(kk-1,oo-1,kk,oo,col=hh,border=hh);
+          text(kk-0.5,oo-0.5,labels=gg,col="black",cex=0.8);
+          ### end oo
+        }
+        ### end kk
+      }
+      ### save
+      graphics.off();
+    }
+  }
+}
+
 
 # PLOT nDayTB ---------------------------------------------------------------
 G$d_temp <-file.path(G$d_out1,"nDay"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
@@ -256,78 +348,6 @@ for(ii in 1:length(ll))
 }
 
 
-# PLOT nDayDiff ---------------------------------------------------------------
-G$d_temp <-file.path(G$d_out1,"nDay"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
-ww <-c(0.1,1,5)
-vv <-1;
-for(vv in 1:length(ww))
-{
-  ll <-names(Mc); ll; 
-  ii <-1;
-  for(ii in 1:length(ll))
-  {
-    dd <-Mc[[ll[ii]]]; message(ll[ii]); 
-    dd <-dd[duplicated(dd$date)==F,]
-    ### plot diff day
-    dd$year <-format(dd$date,"%Y");
-    ff <-data.frame(year=levels(as.factor(dd$year)));
-    rr <-colnames(dd); rr <-rr[str_detect(rr,"^diff")]
-    jj <-4;
-    for(jj in 1:length(rr))
-    {
-      pp <-rr[jj]; 
-      dd <-dd[is.na(dd[,pp])==F,];
-      dd[abs(dd[,pp])>=ww[vv],pp] <-NA;
-      cc <-tapply(dd[,pp], dd$year, function(x){length(x[is.na(x)])})
-      gg <-data.frame(year=names(cc),n=round(as.numeric(cc),1)); colnames(gg)[2] <-rr[jj];
-      ff <-merge(ff,gg,by="year");
-    }
-    ### plot 
-    {
-      ff <-ff[order(ff$year,decreasing = F),]; 
-      ### limit - STAT_out
-      x_min <-1; x_max <-ncol(ff)-1;
-      y_min <-1; y_max <-nrow(ff)
-      ### color
-      cc <-colorRampPalette(c("red3","orange","green4")); ccc <-cc(367)
-      ### window
-      {
-        graphics.off();
-        out <-file.path(G$d_temp,paste0("nDayDiff_",ww[vv],"_",ll[ii],"_.png"));
-        png(out, units="mm", width=x_max*30, height=y_max*10, res=300);
-      }
-      ### base
-      par(mar=c(4,4,2,0),mgp=c(3,1,0),lab=c(5,5,7)); 
-      plot(c(y_min,y_max)~c(x_min,x_max),
-           col="white",xlim=c(x_min,x_max+1),ylim=c(y_min-1,y_max),
-           xaxt="n",yaxt="n",xlab="",ylab="",bty="n")
-      ### axis
-      text(x=x_max/2,y=par("usr")[4]+0.5,labels=paste0("nDayDiff_",ww[vv]," - ",ll[ii]),srt=0,xpd=NA,cex=1.5);   
-      text(x=c(x_min:x_max)+0.5,y=par("usr")[3]-1.5,labels=colnames(ff)[-1],srt=90,xpd=NA)
-      text(x=par("usr")[1]-0.45,y=c(y_min:y_max)-0.5,labels=ff[,1],srt=0,xpd=NA)
-      ### rect
-      kk <-2;
-      for(kk in 2:ncol(ff))
-      {
-        oo <-5;
-        for(oo in 1:y_max)
-        {
-          gg <-ff[oo,kk]; 
-          hh <-ccc[gg+1]; 
-          if(gg%in%0){hh <-"blue3"}
-          if(is.na(gg) | is.nan(gg) | is.infinite(gg)){hh <-"white"; gg<-""}
-          rect(kk-1,oo-1,kk,oo,col=hh,border=hh);
-          text(kk-0.5,oo-0.5,labels=gg,col="black",cex=0.8);
-          ### end oo
-        }
-        ### end kk
-      }
-      ### save
-      graphics.off();
-    }
-  }
-}
-
 # SET Mi ----------------------------------------------------
 Mi <-list(); # meteo corrections
 ll <-sort(names(Mc)); ll; # ll <-ll[!ll%in%c("1101_FF")]
@@ -424,20 +444,32 @@ for(ii in 1:length(ll))
 
 
 
-# SAVE rda --------------------------------------------------------
-G$d_temp <-file.path(G$d_out,"rda"); if(!dir.exists(G$d_temp)){dir.create(G$d_temp)};
 
-out <-paste(G$n_script,"mm_plm.rda",sep="_");
-save(mm_plm,file = file.path(G$d_temp,out));
-out <-paste(G$n_script,"mm_mem.rda",sep="_");
-save(mm_mem,file = file.path(G$d_temp,out));
+# SAVE pg -------------------------------------------------------------
 
-out <-paste(G$n_script,"Mc.rda",sep="_");
-save(Mc,file = file.path(G$d_temp,out));
-out <-paste(G$n_script,"Mi.rda",sep="_");
-save(Mi,file = file.path(G$d_temp,out));
+### rbind plots
+ll <-names(Mi);
+ii <-1; xx <-NULL;
+for(ii in 1:length(ll))
+{
+  aa <-Mi[[ll[ii]]]; 
+  ### add code_plot
+  pp <-str_replace(ll[ii],"_FF","");
+  bb <-data.frame(matrix(NA,nrow(aa),0)); bb$plot <-pp;
+  cc <-cbind(bb,aa);
+  ### ex empty (this is ugly)
+  dd <-is.na(cc[,c(3:ncol(cc))]);
+  ee <-apply(dd, 1, function(x){length(x[x==F])});
+  cc <-cc[ee>0,];
+  ### rbind plots
+  xx <-rbind(xx,cc);
+}
 
-# load(file.path(G$d_temp,out))
+### write pg table
+s1 <-"fuk"
+dbGetQuery(pg,paste("SET search_path TO",s1)); 
+t1 <-paste(G$n_project,"mm_mem",sep="-")
+dbWriteTable(pg, t1,xx,overwrite=T); 
 
 
 # CLEAN ---------------------------------------------------
