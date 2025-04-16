@@ -2,7 +2,7 @@
 # create token and access ThingsBoard
 # list TB devices und sensors
 # Available for users with 'TENANT_ADMIN' authority
-#
+# Provide credentials in .env
 #
 
 # PACKAGES --------------------------------------------------------------
@@ -10,7 +10,7 @@ ll <-c("rstudioapi","stringr","data.table","httr","jsonlite","dotenv")
 for(ii in 1:length(ll)){if(!ll[ii]%in%rownames(installed.packages()))install.packages(ll[ii],dependencies = TRUE);library(ll[ii], character.only = TRUE)}
 
 
-# FUNCTION ------------------------------------------------------------
+# FUNCTIONS ------------------------------------------------------------
 
 ###  get_data function
 post_request <- function(url, body, header = c()) {
@@ -51,9 +51,10 @@ E[["options"]] <-options();
 # TOKEN -------------------------------------------------------------
 TOK <-list();
 TOK$ulr <-"https://thingsboard.forstliche-umweltkontrolle.de/api/auth/login";
-user <-as.character(E[["sys_env"]]["EMAIL"])
+user <-as.character(E[["sys_env"]]["EMAIL"]);
+pw <-as.character(E[["sys_env"]]["TB_PASS"]);
 aa <- post_request("https://thingsboard.forstliche-umweltkontrolle.de/api/auth/login", 
-                   list(username = user, password = askForPassword("Password")));
+                   list(username = user, password = pw));
 TOK$token <- aa$token; TOK$header <- c('X-Authorization' = paste("Bearer", TOK$token, sep = " "));
 
 # DEVICES -----------------------------------------------------------
@@ -127,10 +128,11 @@ for(ii in 1:length(ll))
   if(ll[ii]=="Test (Migration)"){aa <-ll[ii]};
   ###
   tb_devices[tb_devices$dev_name%in%ll[ii],"dev_plot"] <-aa;
-  if(aa==""){message("no plot name given")}
+  if(aa==""){message("no plot name set by 01_access_tb.R")}
 }
 
 # CLEAN ----------------------------------------------------------------------------
 aa <-ls(); aa <-aa[!aa%in%c("tb_devices","TOK")];
-rm(list = aa); cat("//014")
+rm(list = aa); 
+cat("//014")
 
